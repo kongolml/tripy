@@ -1,65 +1,115 @@
-var _W = window.innerWidth
-var _H = window.innerHeight
+var W = window.innerWidth
+var H = window.innerHeight
 
-var scene = new THREE.Scene()
-var camera = new THREE.PerspectiveCamera(75, _W/_H, 1, 10000)
-var renderer = new THREE.WebGLRenderer()
-renderer.setSize(_W, _H)
+var scene, camera, light, renderer, container
 
-var axes = new THREE.AxisHelper(20)
+var theta = 0, radius = 100
 
-renderer.setSize(_W, _H)
-camera.position.set(0, 0, 100)
-camera.lookAt(new THREE.Vector3(0, 0, 0))
+var circleSeparation = 85
 
-var geometry = new THREE.CircleGeometry(1, 32)
-var meterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff
-})
+var raycaster = new THREE.Raycaster()
+var mouse = new THREE.Vector2()
+var INTERSECTED
 
 
+function init(){
+    container = document.createElement('div')
+    document.body.appendChild(container)
 
-var separation = 10
+    scene = new THREE.Scene()
 
-for(var x=-(_W/separation); x<_W/separation; x+=separation){
-    for(var y=-(_H/separation); y<_H/separation; y+=separation){
-        var circle = new THREE.Mesh(geometry, meterial)
-        circle.position.set(x, y, 0)
-        scene.add(circle)
+    camera = new THREE.PerspectiveCamera(75, W/H, 1, 1000)
+    //camera = new THREE.OrthographicCamera(W/-2, W/2, H/2, H/-2, 1, 1000)
+    camera.position.set(0, 0, 1000)
+
+    renderer = new THREE.WebGLRenderer()
+    renderer.setClearColor(0x000000)
+    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setSize(W, H)
+
+    light = new THREE.AmbientLight(0xaeaeae)
+    scene.add(light)
+
+    container.appendChild(renderer.domElement)
+
+    var geometry = new THREE.BoxBufferGeometry(32, 32, 32)
+    var material = new THREE.MeshLambertMaterial({
+        color: 0xffffff,
+        wireframe: true
+    })
+
+    for(var x=0; x<W; x+=circleSeparation){
+        for(var y=0; y<H; y+=circleSeparation){
+            var sphere = new THREE.Mesh(geometry, material)
+            sphere.position.set((x-W/2), (y-H/2), 0)
+            scene.add(sphere)
+        }
     }
+
+
+    document.addEventListener('mousemove', onMouseMove, false)
+    window.addEventListener('resize', onWindowResize, false)
+
+
+    // helper
+    var axis = new THREE.AxisHelper(20)
+    scene.add(axis)
 }
 
-scene.add(axes)
+
+function render(){
+    theta += 1
+
+    // camera.position.set(radius * Math.sin(THREE.Math.degToRad(theta)), radius * Math.sin(THREE.Math.degToRad(theta)), 500)
+    camera.lookAt( scene.position )
+    handleRaycasting()
+    renderer.render(scene, camera)
+}
 
 
+function animate(){
+    requestAnimationFrame(animate)
+    render()
+}
 
-document.addEventListener('mousemove', omMouseMove, false)
-document.addEventListener('mousedown', onMouseDown, false)
-document.addEventListener('mouseup', onMouseUp, false)
 
-var mouseDown = false
-
-function omMouseMove(e){
+function onMouseMove(e){
     e.preventDefault()
-    var cameraX = -(e.clientX-_W/2)/10
-    var cameraY = (e.clientY-_H/2)/10
 
-    if(mouseDown){
-        camera.position.set(cameraX, cameraY, 100)
-        renderer.render(scene, camera)
+    mouse.x = (e.clientX/W) * 2 - 1
+    mouse.y = -(e.clientY/H) * 2 + 1
+}
+
+
+function handleRaycasting(){
+    raycaster.setFromCamera(mouse, camera)
+    var intersects = raycaster.intersectObjects(scene.children)
+
+    if(intersects.length>0){
+        if(INTERSECTED!=intersects[0].object){
+            INTERSECTED = intersects[0].object
+            INTERSECTED.rotation.set(100, 100, 100)
+            console.log(INTERSECTED.id)
+        }
+    } else {
+        if(INTERSECTED){
+            INTERSECTED.rotation.set(0, 0, 0)
+            INTERSECTED = null
+        }
     }
 }
 
-function onMouseDown(e){
-    mouseDown = true
+
+function onWindowResize(){
+    W = window.innerWidth
+    H = window.innerHeight
+
+    camera.aspect = W/H
+    camera.updateProjectionMatrix()
+    
+    renderer.setSize(W, H)
 }
 
-function onMouseUp(e){
-    mouseDown = false
-}
 
-
-renderer.render(scene, camera)
-
-
-document.body.appendChild(renderer.domElement)
+init()
+animate()
