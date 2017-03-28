@@ -3,13 +3,19 @@ var H = window.innerHeight
 
 var scene, camera, light, renderer, container
 
-var theta = 0, radius = 100
-
 var circleSeparation = 85
 
 var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
 var INTERSECTED
+
+var geometry
+var material
+
+// mouse
+var mouseDown = false
+
+var group = new THREE.Group()
 
 
 function init(){
@@ -18,51 +24,55 @@ function init(){
 
     scene = new THREE.Scene()
 
-    camera = new THREE.PerspectiveCamera(75, W/H, 1, 1000)
+    camera = new THREE.PerspectiveCamera(75, W/H, 1, 10000)
     //camera = new THREE.OrthographicCamera(W/-2, W/2, H/2, H/-2, 1, 1000)
-    camera.position.set(0, 0, 1000)
+    camera.position.set(0, 0, 700)
 
     renderer = new THREE.WebGLRenderer()
-    renderer.setClearColor(0x000000)
+    renderer.setClearColor(0xfafafa)
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setSize(W, H)
 
-    light = new THREE.AmbientLight(0xaeaeae)
+    light = new THREE.PointLight(0xaeaeae)
+    light.position.set(350, 0, 1150)
     scene.add(light)
 
     container.appendChild(renderer.domElement)
 
-    var geometry = new THREE.BoxBufferGeometry(32, 32, 32)
-    var material = new THREE.MeshLambertMaterial({
-        color: 0xffffff,
-        wireframe: true
+    geometry = new THREE.BoxBufferGeometry(32, 32, 32)
+    material = new THREE.MeshLambertMaterial({
+        color: 0x2194ce
     })
+
 
     for(var x=0; x<W; x+=circleSeparation){
         for(var y=0; y<H; y+=circleSeparation){
             var sphere = new THREE.Mesh(geometry, material)
             sphere.position.set((x-W/2), (y-H/2), 0)
-            scene.add(sphere)
+            group.add(sphere)
         }
     }
 
+    scene.add(group)
+
 
     document.addEventListener('mousemove', onMouseMove, false)
+    document.addEventListener('mousedown', onMouseDown, false)
+    document.addEventListener('mouseup', onMouseUp, false)
+    document.addEventListener('mousewheel', onMouseWheel, false)
     window.addEventListener('resize', onWindowResize, false)
 
 
     // helper
-    var axis = new THREE.AxisHelper(20)
+    var axis = new THREE.AxisHelper(200)
     scene.add(axis)
 }
 
 
 function render(){
-    theta += 1
-
-    // camera.position.set(radius * Math.sin(THREE.Math.degToRad(theta)), radius * Math.sin(THREE.Math.degToRad(theta)), 500)
-    camera.lookAt( scene.position )
     handleRaycasting()
+
+    camera.lookAt( scene.position )
     renderer.render(scene, camera)
 }
 
@@ -78,25 +88,26 @@ function onMouseMove(e){
 
     mouse.x = (e.clientX/W) * 2 - 1
     mouse.y = -(e.clientY/H) * 2 + 1
+
+    if( mouseDown ) {
+        //camera.position.x = e.clientX - W/2
+        //camera.position.y = -e.clientY + H/2
+    }
 }
 
 
-function handleRaycasting(){
-    raycaster.setFromCamera(mouse, camera)
-    var intersects = raycaster.intersectObjects(scene.children)
+function onMouseWheel(e){
+    camera.position.z += -e.deltaY
+}
 
-    if(intersects.length>0){
-        if(INTERSECTED!=intersects[0].object){
-            INTERSECTED = intersects[0].object
-            INTERSECTED.rotation.set(100, 100, 100)
-            console.log(INTERSECTED.id)
-        }
-    } else {
-        if(INTERSECTED){
-            INTERSECTED.rotation.set(0, 0, 0)
-            INTERSECTED = null
-        }
-    }
+
+function onMouseDown(){
+    mouseDown = true
+}
+
+
+function onMouseUp(){
+    mouseDown = false
 }
 
 
@@ -109,6 +120,27 @@ function onWindowResize(){
     
     renderer.setSize(W, H)
 }
+
+
+function handleRaycasting(){
+    raycaster.setFromCamera(mouse, camera)
+    var intersects = raycaster.intersectObjects(group.children)
+
+    if(intersects.length>0 && mouseDown){
+        console.log(intersects)
+        if(INTERSECTED!=intersects[0].object){
+            INTERSECTED = intersects[0].object
+            INTERSECTED.material.color.set(0xff8800)
+            INTERSECTED.rotation.set(100, 100, 100)
+        }
+    } else {
+        if(INTERSECTED){
+            INTERSECTED.rotation.set(0, 0, 0)
+            INTERSECTED = null
+        }
+    }
+}
+
 
 
 init()
