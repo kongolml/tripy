@@ -1,7 +1,7 @@
 var W = window.innerWidth
 var H = window.innerHeight
 
-var scene, camera, light, renderer, container
+var scene, camera, light, renderer, container, controls
 
 var circleSeparation = 85
 
@@ -27,6 +27,9 @@ function init(){
     camera = new THREE.PerspectiveCamera(75, W/H, 1, 10000)
     //camera = new THREE.OrthographicCamera(W/-2, W/2, H/2, H/-2, 1, 1000)
     camera.position.set(0, 0, 700)
+
+    controls = new THREE.OrbitControls(camera)
+    controls.addEventListener('change', render)
 
     renderer = new THREE.WebGLRenderer()
     renderer.setClearColor(0xfafafa)
@@ -66,11 +69,17 @@ function init(){
     // helper
     var axis = new THREE.AxisHelper(200)
     scene.add(axis)
+
+    createRope()
 }
 
 
 function render(){
     handleRaycasting()
+
+    if( mouseDown ) {
+        animateObject(INTERSECTED)
+    }
 
     camera.lookAt( scene.position )
     renderer.render(scene, camera)
@@ -88,11 +97,6 @@ function onMouseMove(e){
 
     mouse.x = (e.clientX/W) * 2 - 1
     mouse.y = -(e.clientY/H) * 2 + 1
-
-    if( mouseDown ) {
-        //camera.position.x = e.clientX - W/2
-        //camera.position.y = -e.clientY + H/2
-    }
 }
 
 
@@ -127,11 +131,9 @@ function handleRaycasting(){
     var intersects = raycaster.intersectObjects(group.children)
 
     if(intersects.length>0 && mouseDown){
-        console.log(intersects)
         if(INTERSECTED!=intersects[0].object){
             INTERSECTED = intersects[0].object
-            INTERSECTED.material.color.set(0xff8800)
-            INTERSECTED.rotation.set(100, 100, 100)
+            console.log(INTERSECTED)
         }
     } else {
         if(INTERSECTED){
@@ -139,6 +141,34 @@ function handleRaycasting(){
             INTERSECTED = null
         }
     }
+}
+
+
+var sinArgument = 0
+function animateObject(object) {
+    if( object ) {
+        sinArgument += 0.1
+        var translateVal = Math.cos(sinArgument)
+
+        object.translateZ(translateVal*2)
+    }
+}
+
+
+function createRope() {
+    var ropeNumSegments = 10
+    var ropeLength = 4
+    var ropePos = scene.position.clone()
+
+    var segmentLength = ropeLength / ropeNumSegments
+    var ropeGeometry = new THREE.BufferGeometry()
+    var ropeMaterial = new THREE.LineBasicMaterial({
+        color: 0x000000
+    })
+
+    var rope = new THREE.LineSegments(ropeGeometry, ropeMaterial)
+
+    scene.add(rope)
 }
 
 
