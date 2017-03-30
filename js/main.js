@@ -9,13 +9,14 @@ var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
 var INTERSECTED
 
-var geometry
-var material
+var squareGeometry
+var squareMaterial
 
 // mouse
 var mouseDown = false
 
-var group = new THREE.Group()
+var squaresGroup = new THREE.Group()
+var spheresGroup = new THREE.Group()
 
 
 function init(){
@@ -42,21 +43,31 @@ function init(){
 
     container.appendChild(renderer.domElement)
 
-    geometry = new THREE.BoxBufferGeometry(32, 32, 32)
-    material = new THREE.MeshLambertMaterial({
+    squareGeometry = new THREE.BoxBufferGeometry(32, 32, 32)
+    squareMaterial = new THREE.MeshLambertMaterial({
         color: 0x2194ce
     })
 
 
     for(var x=0; x<W; x+=circleSeparation){
         for(var y=0; y<H; y+=circleSeparation){
-            var sphere = new THREE.Mesh(geometry, material)
+            var cube = new THREE.Mesh(squareGeometry, squareMaterial)
+            cube.position.set((x-W/2), (y-H/2), 0)
+            squaresGroup.add(cube)
+
+            var sphereGeometry = new THREE.SphereBufferGeometry(32, 5, 5)
+            var sphereMaterial = new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                wireframe: true
+            })
+            var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
             sphere.position.set((x-W/2), (y-H/2), 0)
-            group.add(sphere)
+            spheresGroup.add(sphere)
         }
     }
 
-    scene.add(group)
+    scene.add(squaresGroup)
+    scene.add(spheresGroup)
 
 
     document.addEventListener('mousemove', onMouseMove, false)
@@ -68,9 +79,9 @@ function init(){
 
     // helper
     var axis = new THREE.AxisHelper(200)
-    scene.add(axis)
+    // scene.add(axis)
 
-    createRope()
+    
 }
 
 
@@ -128,12 +139,11 @@ function onWindowResize(){
 
 function handleRaycasting(){
     raycaster.setFromCamera(mouse, camera)
-    var intersects = raycaster.intersectObjects(group.children)
+    var intersects = raycaster.intersectObjects(squaresGroup.children)
 
     if(intersects.length>0 && mouseDown){
         if(INTERSECTED!=intersects[0].object){
             INTERSECTED = intersects[0].object
-            console.log(INTERSECTED)
         }
     } else {
         if(INTERSECTED){
@@ -155,20 +165,16 @@ function animateObject(object) {
 }
 
 
-function createRope() {
-    var ropeNumSegments = 10
-    var ropeLength = 4
-    var ropePos = scene.position.clone()
-
-    var segmentLength = ropeLength / ropeNumSegments
-    var ropeGeometry = new THREE.BufferGeometry()
-    var ropeMaterial = new THREE.LineBasicMaterial({
-        color: 0x000000
-    })
-
-    var rope = new THREE.LineSegments(ropeGeometry, ropeMaterial)
-
-    scene.add(rope)
+/*
+find closest objects:
+ - sphere around each object
+ - add objects inside sphere to array
+ - draw line to each object in array
+ - ...
+ - ask on stackoverflow ;(
+*/
+function findNearestObjects() {
+    // build sphere
 }
 
 
