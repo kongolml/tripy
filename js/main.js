@@ -3,7 +3,7 @@ var H = window.innerHeight
 
 var scene, camera, light, renderer, container, controls
 
-var circleSeparation = 85
+var cubeSeparation = 85
 
 var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
@@ -16,7 +16,10 @@ var squareMaterial
 var mouseDown = false
 
 var squaresGroup = new THREE.Group()
-var spheresGroup = new THREE.Group()
+
+
+// octree
+var octree
 
 
 function init(){
@@ -49,25 +52,18 @@ function init(){
     })
 
 
-    for(var x=0; x<W; x+=circleSeparation){
-        for(var y=0; y<H; y+=circleSeparation){
+    for(var x=0; x<W; x+=cubeSeparation*4){
+        for(var y=0; y<H; y+=cubeSeparation*4){
             var cube = new THREE.Mesh(squareGeometry, squareMaterial)
             cube.position.set((x-W/2), (y-H/2), 0)
-            squaresGroup.add(cube)
 
-            var sphereGeometry = new THREE.SphereBufferGeometry(32, 5, 5)
-            var sphereMaterial = new THREE.MeshBasicMaterial({
-                color: 0x000000,
-                wireframe: true
-            })
-            var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
-            sphere.position.set((x-W/2), (y-H/2), 0)
-            spheresGroup.add(sphere)
+            findNearestObjects(cube)
+
+            squaresGroup.add(cube)
         }
     }
 
     scene.add(squaresGroup)
-    scene.add(spheresGroup)
 
 
     document.addEventListener('mousemove', onMouseMove, false)
@@ -79,20 +75,19 @@ function init(){
 
     // helper
     var axis = new THREE.AxisHelper(200)
-    // scene.add(axis)
+    scene.add(axis)
 
-    
 }
 
 
 function render(){
     handleRaycasting()
 
-    if( mouseDown ) {
-        animateObject(INTERSECTED)
-    }
+    // if( mouseDown ) {
+    //     animateObject(INTERSECTED)
+    // }
 
-    camera.lookAt( scene.position )
+    //camera.lookAt( scene.position )
     renderer.render(scene, camera)
 }
 
@@ -108,6 +103,8 @@ function onMouseMove(e){
 
     mouse.x = (e.clientX/W) * 2 - 1
     mouse.y = -(e.clientY/H) * 2 + 1
+
+    document.getElementById("info").innerHTML = "x: " +e.clientX + "; y: " + e.clientY
 }
 
 
@@ -137,6 +134,7 @@ function onWindowResize(){
 }
 
 
+var mycube
 function handleRaycasting(){
     raycaster.setFromCamera(mouse, camera)
     var intersects = raycaster.intersectObjects(squaresGroup.children)
@@ -144,6 +142,7 @@ function handleRaycasting(){
     if(intersects.length>0 && mouseDown){
         if(INTERSECTED!=intersects[0].object){
             INTERSECTED = intersects[0].object
+            mycube = INTERSECTED
         }
     } else {
         if(INTERSECTED){
@@ -154,27 +153,38 @@ function handleRaycasting(){
 }
 
 
-var sinArgument = 0
 function animateObject(object) {
     if( object ) {
-        sinArgument += 0.1
-        var translateVal = Math.cos(sinArgument)
-
-        object.translateZ(translateVal*2)
+        object.translateZ(100)
     }
 }
 
 
 /*
 find closest objects:
- - sphere around each object
- - add objects inside sphere to array
- - draw line to each object in array
- - ...
- - ask on stackoverflow ;(
+ - generate octree for each cube
+ - find neighbours
+ - generate line
 */
-function findNearestObjects() {
-    // build sphere
+function findNearestObjects(object) {
+    var nearestObjects = []
+
+    // build octree
+    octree = new THREE.Octree({
+        undeferred: false,
+        depthMax: Infinity,
+        objectsThreshold: 18,
+        overlapPct: (32+85) * 4,
+        scene: object
+    })
+
+    octree.add(object)
+    octree.update()
+
+
+    // find neighbours
+    // console.log(octree.search(object.position, 1200))
+
 }
 
 
