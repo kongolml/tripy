@@ -3,7 +3,7 @@ var H = window.innerHeight
 
 var scene, camera, light, renderer, container, controls
 
-var cubeSeparation = 85
+var cubeSeparation = 55
 
 var raycaster = new THREE.Raycaster()
 var mouse = new THREE.Vector2()
@@ -20,7 +20,7 @@ var squaresGroup = new THREE.Group()
 
 // octree
 var octree
-
+var mycube
 
 function init(){
     container = document.createElement('div')
@@ -29,8 +29,8 @@ function init(){
     scene = new THREE.Scene()
 
     camera = new THREE.PerspectiveCamera(75, W/H, 1, 10000)
-    //camera = new THREE.OrthographicCamera(W/-2, W/2, H/2, H/-2, 1, 1000)
-    camera.position.set(0, 0, 700)
+    // camera = new THREE.OrthographicCamera(W/-2, W/2, H/2, H/-2, 1, 1000)
+    camera.position.set(0, 0, 1000)
 
     controls = new THREE.OrbitControls(camera)
     controls.addEventListener('change', render)
@@ -46,24 +46,31 @@ function init(){
 
     container.appendChild(renderer.domElement)
 
-    squareGeometry = new THREE.BoxBufferGeometry(32, 32, 32)
-    squareMaterial = new THREE.MeshLambertMaterial({
-        color: 0x2194ce
-    })
+    
 
 
-    for(var x=0; x<W; x+=cubeSeparation*4){
-        for(var y=0; y<H; y+=cubeSeparation*4){
+    for(var x=0; x<W; x+=cubeSeparation*2){
+        for(var y=0; y<H; y+=cubeSeparation*2){
+
+            squareGeometry = new THREE.BoxBufferGeometry(32, 32, 32)
+            squareMaterial = new THREE.MeshLambertMaterial({
+                color: 0x2194ce
+            })
+
             var cube = new THREE.Mesh(squareGeometry, squareMaterial)
             cube.position.set((x-W/2), (y-H/2), 0)
 
-            findNearestObjects(cube)
+            mycube = cube
 
-            squaresGroup.add(cube)
+            findNearestObjects(mycube)
+
+            scene.add(cube)
+
+            // squaresGroup.add(cube)
         }
     }
 
-    scene.add(squaresGroup)
+    // scene.add(squaresGroup)
 
 
     document.addEventListener('mousemove', onMouseMove, false)
@@ -134,7 +141,6 @@ function onWindowResize(){
 }
 
 
-var mycube
 function handleRaycasting(){
     raycaster.setFromCamera(mouse, camera)
     var intersects = raycaster.intersectObjects(squaresGroup.children)
@@ -142,7 +148,6 @@ function handleRaycasting(){
     if(intersects.length>0 && mouseDown){
         if(INTERSECTED!=intersects[0].object){
             INTERSECTED = intersects[0].object
-            mycube = INTERSECTED
         }
     } else {
         if(INTERSECTED){
@@ -166,16 +171,18 @@ find closest objects:
  - find neighbours
  - generate line
 */
+
 function findNearestObjects(object) {
     var nearestObjects = []
 
     // build octree
     octree = new THREE.Octree({
+        radius: 490,
         undeferred: false,
         depthMax: Infinity,
-        objectsThreshold: 18,
-        overlapPct: (32+85) * 4,
-        scene: object
+        objectsThreshold: 2,
+        overlapPct: 0.15,
+        scene: scene
     })
 
     octree.add(object)
